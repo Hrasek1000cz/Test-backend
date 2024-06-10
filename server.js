@@ -36,6 +36,6 @@ app.get(adresaEnding, (req, res) => {
     res.send(JSON.parse(data));
   });
 });
-app.listen(() => {
+app.listen(5010, () => {
 
 });
