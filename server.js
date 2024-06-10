@@ -36,6 +36,6 @@ app.get(adresaEnding, (req, res) => {
     res.send(JSON.parse(data));
   });
 });
-app.listen(adresaPort, adresa,() => {
-  console.log(`Server nalezneš na http://${adresa}:${adresaPort}${adresaEnding}`);
+app.listen(() => {
+
 });
