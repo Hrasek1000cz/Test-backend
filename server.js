@@ -1,49 +1,41 @@
 require('dotenv').config();
-
 const axios = require('axios');
 const fs = require('fs');
 const express = require('express');
 const app = express();
-
-const API_URL = process.env.API_URL;
-const API_KEY = process.env.API_KEY;
-const CACHE_FILE = 'cache.json';
-const CACHE_DURATION = 30 * 60 * 1000; // 30 minut v milisekundách
-
-// Middleware pro CORS
-app.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "http://localhost:5000"); // Nastavte správnou adresu vaší webové stránky
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    next();
-});
-
-async function fetchAndCacheData() {
+const apiUrl = process.env.apiUrl;
+const apiKey = process.env.apiKey;
+const adresa = 'localhost'; //Toto je jen pro testování, potom se tam zadá adresa 
+const adresaPort = 5010; //Lze změnit, nebo i odstranit
+const adresaEnding = '/savedData'; //Lze také upravit
+const cacheFile = 'cache.json';
+const restartTime = 3600000; 
+async function fetchAndWriteData() {
   try {
-    const response = await axios.get(API_URL, { params: { app_id: API_KEY } });
-    const data = response.data;
-
-    fs.writeFileSync(CACHE_FILE, JSON.stringify(data));
-
-    console.log('Data updated:', data);
+    const response = await axios.get(apiUrl, { params: { app_id: apiKey} });
+    let data = response.data;
+    delete data["disclaimer"];delete data["license"];delete data["timestamp"];
+    fs.writeFileSync(cacheFile, JSON.stringify(data));
+    console.log('Úspešně se podařilo načíst');
   } catch (error) {
-    console.error('Error fetching data:', error);
+    console.error('Nezdařilo se, chyba --->:', error);
   }
 }
-
-setInterval(fetchAndCacheData, CACHE_DURATION);
-fetchAndCacheData();
-
-app.get('/data', (req, res) => {
-  fs.readFile(CACHE_FILE, 'utf8', (err, data) => {
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*"); 
+  next();
+});
+setInterval(fetchAndWriteData, restartTime);
+fetchAndWriteData();
+app.get(adresaEnding, (req, res) => {
+  fs.readFile(cacheFile, 'utf8', (err, data) => {
     if (err) {
-      console.error('Error reading cache file:', err);
-      return res.status(500).send('Internal Server Error');
+      console.error('Chyba', err);
+      return res.status(500).send('Chyba serveru');
     }
-
     res.send(JSON.parse(data));
   });
 });
-
-app.listen(5000, () => {
-  console.log('Server is running on http://localhost:5000');
+app.listen(adresaPort, adresa,() => {
+  console.log(`Server nalezneš na http://${adresa}:${adresaPort}${adresaEnding}`);
 });
